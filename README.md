@@ -17,5 +17,21 @@ Implement multiple classification models and deploy them via Streamlit.
 - XGBoost
 
 ## Evaluation Metrics
-| Model              | Accuracy | AUC | Precision | Recall | F1 | MCC |
-|--------------------|----------|-----|
+| Model | Accuracy | AUC | Precision | Recall | F1 | MCC |
+|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+| Logistic Regression | | | | | | |  
+| Decision Tree Classifier | 
+| K-Nearest Neighbor Classifier |
+| Naive Bayes Classifier - Gaussian or Multinomial |
+| Ensemble Model - Random Forest | 
+| Ensemble Model - XGBoost |
+
+## Observation
+| Model | Observation about model performance |
+|:----:|:----:|
+| Logistic Regression |  
+| Decision Tree Classifier | 
+| K-Nearest Neighbor Classifier |
+| Naive Bayes Classifier - Gaussian or Multinomial |
+| Ensemble Model - Random Forest | 
+| Ensemble Model - XGBoost |
