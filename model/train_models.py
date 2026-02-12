@@ -20,7 +20,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report, matthews_corrcoef
 import joblib
 
 from model.utils import load_dataset, preprocess_features_targets, ensure_dir, save_metrics
@@ -71,11 +71,13 @@ def train_and_evaluate(df, target_col, output_dir, test_size=0.2, random_state=4
         y_pred = clf.predict(X_test)
 
         acc = accuracy_score(y_test, y_pred)
+        mcc = matthews_corrcoef(y_test, y_pred)  # <-- Added MCC calculation
         precision, recall, f1, _ = precision_recall_fscore_support(y_test, y_pred, average='weighted', zero_division=0)
 
         results.append({
             "model": name,
             "accuracy": acc,
+            "mcc-score": mcc,
             "precision": precision,
             "recall": recall,
             "f1_score": f1,
@@ -84,12 +86,13 @@ def train_and_evaluate(df, target_col, output_dir, test_size=0.2, random_state=4
         # save model
         joblib.dump(clf, os.path.join(models_dir, f"{name}.joblib"))
 
-        print(f"{name} -- acc: {acc:.4f}, f1: {f1:.4f}")
+        print(f"{name} -- acc: {acc:.4f}, mcc: {mcc:.4f}, f1: {f1:.4f}")
         details[name] = {
             "estimator": clf,
             "y_test": y_test,
             "y_pred": y_pred,
             "accuracy": acc,
+            "mcc-score": mcc,
             "precision": precision,
             "recall": recall,
             "f1_score": f1,
