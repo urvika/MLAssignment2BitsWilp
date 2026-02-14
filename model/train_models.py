@@ -21,15 +21,19 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report, matthews_corrcoef
+from sklearn.metrics import roc_auc_score
 import joblib
 
 from model.utils import load_dataset, preprocess_features_targets, ensure_dir, save_metrics
 
 warnings.filterwarnings("ignore")
 
-
 def train_and_evaluate(df, target_col, output_dir, test_size=0.2, random_state=42, scale=True):
     X, y = preprocess_features_targets(df, target_col)
+    
+    # --- NEW: Get unique class names for the classification report ---
+    # We convert to string to ensure the classification_report can label them properly
+    class_names = [str(c) for c in np.unique(y)]
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state, stratify=y if len(np.unique(y))>1 else None
@@ -41,6 +45,7 @@ def train_and_evaluate(df, target_col, output_dir, test_size=0.2, random_state=4
         X_train = scaler.fit_transform(X_train)
         X_test = scaler.transform(X_test)
 
+    # ... [Model dictionary definition remains the same] ...
     models = {
         "LogisticRegression": LogisticRegression(max_iter=1000, random_state=random_state),
         "DecisionTree": DecisionTreeClassifier(random_state=random_state),
@@ -49,7 +54,7 @@ def train_and_evaluate(df, target_col, output_dir, test_size=0.2, random_state=4
         "RandomForest": RandomForestClassifier(n_estimators=100, random_state=random_state),
     }
 
-    # XGBoost (may be slower) - include if available
+   # XGBoost (may be slower) - include if available
     try:
         from xgboost import XGBClassifier
         models["XGBoost"] = XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=random_state)
@@ -58,22 +63,23 @@ def train_and_evaluate(df, target_col, output_dir, test_size=0.2, random_state=4
 
     results = []
     details = {}
-    models_dir = os.path.join(output_dir, "models")
+    #models_dir = os.path.join(output_dir, "models")
+    models_dir = output_dir
     ensure_dir(models_dir)
 
-    # Save scaler if used
-    if scaler is not None:
-        joblib.dump(scaler, os.path.join(models_dir, "scaler.joblib"))
+    
+    # Add target_names to the top level of details so Streamlit can find them easily
+    details['target_names'] = class_names
 
     for name, clf in models.items():
-        print(f"Training {name}...")
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)
 
         acc = accuracy_score(y_test, y_pred)
-        mcc = matthews_corrcoef(y_test, y_pred)  # <-- Added MCC calculation
+        mcc = matthews_corrcoef(y_test, y_pred)
         precision, recall, f1, _ = precision_recall_fscore_support(y_test, y_pred, average='weighted', zero_division=0)
-
+        y_probs = clf.predict_proba(X_test)[:, 1]
+        auc_score = roc_auc_score(y_test, y_probs)
         results.append({
             "model": name,
             "accuracy": acc,
@@ -81,21 +87,15 @@ def train_and_evaluate(df, target_col, output_dir, test_size=0.2, random_state=4
             "precision": precision,
             "recall": recall,
             "f1_score": f1,
+            "auc-score": auc_score,
         })
-
         # save model
         joblib.dump(clf, os.path.join(models_dir, f"{name}.joblib"))
-
-        print(f"{name} -- acc: {acc:.4f}, mcc: {mcc:.4f}, f1: {f1:.4f}")
         details[name] = {
-            "estimator": clf,
             "y_test": y_test,
             "y_pred": y_pred,
-            "accuracy": acc,
-            "mcc-score": mcc,
-            "precision": precision,
-            "recall": recall,
-            "f1_score": f1,
+            # Pass the names into the specific model detail too
+            "target_names": class_names 
         }
 
     metrics_df = pd.DataFrame(results).sort_values(by="f1_score", ascending=False)
