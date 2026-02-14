@@ -33,7 +33,7 @@ if df is not None:
 
     if st.button("Train models"):
         with st.spinner("Training models — this may take a moment..."):
-            metrics_df, details = train_and_evaluate(df, target_col, output_dir="outputs_streamlit",
+            metrics_df, details = train_and_evaluate(df, target_col, output_dir="ml_outputs",
                                                      test_size=test_size, random_state=42, scale=scale)
 
         st.success("Training complete")
