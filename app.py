@@ -10,7 +10,7 @@ from model.train_models import train_and_evaluate
 from model.utils import load_dataset
 
 
-st.title("ML Assignment 2 - Classification Models")
+st.title("2025AA05394 - ML Assignment 2 - Classification Models")
 
 uploaded_file = st.file_uploader("Upload CSV dataset", type="csv")
 use_default = st.checkbox("Use default (Iris) dataset")
