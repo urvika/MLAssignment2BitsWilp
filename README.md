@@ -4,7 +4,7 @@
 Implement multiple classification models and deploy them via Streamlit.
 
 ## Dataset
-- Source: [Kaggle/UCI dataset link]
+- Source: https://www.kaggle.com/datasets/taweilo/loan-approval-classification-data
 - Features: ≥12
 - Instances: ≥500
 
