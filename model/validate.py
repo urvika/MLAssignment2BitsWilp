@@ -12,18 +12,21 @@ def validate_model(model_path, data, target_col):
     """
     try:
         model = joblib.load(model_path)
+        scaler = joblib.load("model/scaler.joblib")
         
         # Check for ground truth
         has_ground_truth = target_col in data.columns
         if not has_ground_truth:
             X_val = data
+            X_val_scaled = scaler.transform(X_val)
             y_true = None
         else:
             X_val = data.drop(columns=[target_col])
+            X_val_scaled = scaler.transform(X_val)
             y_true = data[target_col]
 
         # Predict
-        y_pred = model.predict(X_val)
+        y_pred = model.predict(X_val_scaled)
         results = {"predictions": y_pred, "metrics": None, "y_true": y_true}
 
         if has_ground_truth:
