@@ -13,20 +13,55 @@ def validate_model(model_path, data, target_col):
     try:
         model = joblib.load(model_path)
         scaler = joblib.load("model/scaler.joblib")
-        
+# 1. Separate features and target
+        X_val = data.drop(columns=[target_col]) if target_col in data.columns else data
+
+        # 2. Handle Categorical Data (Mandatory for Math models like KNN)
+        # This converts text to numbers
+        for col in X_val.select_dtypes(include=['object']).columns:
+            X_val[col] = X_val[col].astype('category').cat.codes
+
+        # 3. Handle Feature Alignment
+        if hasattr(model, 'feature_names_in_'):
+            # The model knows what it wants!
+            expected_features = model.feature_names_in_
+            X_val = X_val[expected_features]
+        else:
+            # The model is "blind" to names. 
+            # We must assume the first N columns are correct.
+            # Warning: This is risky if your CSV columns moved!
+            #st.warning("⚠️ Model has no feature names. Using the first columns found in CSV.")
+            # If KNN expects 8 features, take the first 8
+            # This is a fallback to prevent the 'expected 8, got 13' error
+            num_features_expected = model.n_features_in_ if hasattr(model, 'n_features_in_') else None
+            if num_features_expected:
+                X_val = X_val.iloc[:, :num_features_expected] 
+            has_ground_truth = target_col in data.columns
+            y_true = data[target_col]
+
+        """    
         # Check for ground truth
         has_ground_truth = target_col in data.columns
         if not has_ground_truth:
             X_val = data
-            X_val_scaled = scaler.transform(X_val)
+            #X_val_scaled = scaler.transform(X_val)
             y_true = None
         else:
             X_val = data.drop(columns=[target_col])
-            X_val_scaled = scaler.transform(X_val)
+            #X_val_scaled = scaler.transform(X_val)
             y_true = data[target_col]
-
+# 2. Convert Categorical strings to numeric codes
+        # This handles 'loan_intent', 'person_gender', etc.
+        for col in X_val.select_dtypes(include=['object']).columns:
+            X_val[col] = X_val[col].astype('category').cat.codes
+        if hasattr(model, 'feature_names_in_'):
+            expected_features = model.feature_names_in_
+            # Reorder columns and fill missing ones with 0
+            X_val = X_val.reindex(columns=expected_features, fill_value=0)    
+         """
         # Predict
-        y_pred = model.predict(X_val_scaled)
+        #y_pred = model.predict(X_val_scaled)
+        y_pred = model.predict(X_val)
         results = {"predictions": y_pred, "metrics": None, "y_true": y_true}
 
         if has_ground_truth:

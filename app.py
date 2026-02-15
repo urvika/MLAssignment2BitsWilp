@@ -27,7 +27,7 @@ df = None
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 elif use_default:
-    df = load_dataset(None, use_default=True)
+    df = load_dataset("model/loan_test.csv", use_default=True)
 
 if df is not None:
     tab1, tab2 = st.tabs(["📊 Data Exploration", "🤖 Model Validation"])
