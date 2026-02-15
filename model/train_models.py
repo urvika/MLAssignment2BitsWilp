@@ -97,7 +97,7 @@ def train_and_evaluate(df, target_col, output_dir, test_size=0.2, random_state=4
             # Pass the names into the specific model detail too
             "target_names": class_names 
         }
-
+    joblib.dump(scaler, "model/scaler.joblib")
     metrics_df = pd.DataFrame(results).sort_values(by="f1_score", ascending=False)
     save_metrics(metrics_df, output_dir)
     return metrics_df, details

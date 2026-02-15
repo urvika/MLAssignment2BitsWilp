@@ -14,27 +14,20 @@ from model.validate import validate_model
 st.set_page_config(page_title="ML Classifier", layout="wide")
 
 st.title("🚀 ML Assignment 2 - Classification Dashboard")
-st.markdown("Upload a dataset to train and compare multiple classification models instantly.")
+st.markdown("Upload a dataset and compare multiple classification models instantly.")
 
 # --- Sidebar: Configuration ---
 with st.sidebar:
     st.header("1. Data Configuration")
     uploaded_file = st.file_uploader("Upload CSV dataset", type="csv")
-    use_default = st.checkbox("Use default (Iris) dataset", value=False)
-    
-    st.divider()
-    
-    st.header("2. Hyperparameters")
-    test_size = st.slider("Test set fraction", 0.1, 0.5, 0.2, 0.05)
-    scale = st.checkbox("Scale features (StandardScaler)", value=True)
-    random_state = st.number_input("Random Seed", value=42)
+    use_default = st.checkbox("Use the test dataset", value=False)
 
 # --- Data Loading ---
 df = None
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 elif use_default:
-    df = load_dataset(None, use_default=True)
+    df = load_dataset("model/loan_test.csv", use_default=True)
 
 if df is not None:
     tab1, tab2 = st.tabs(["📊 Data Exploration", "🤖 Model Validation"])
@@ -50,62 +43,43 @@ if df is not None:
             target_col = st.selectbox("🎯 Select target column", df.columns, index=len(df.columns)-1)
 
     with tab2:
-        if st.button("Run Model Evaluation", type="primary"):
-            with st.spinner("Validating..."):
-                metrics_df, details = train_and_evaluate(
-                    df, target_col, 
-                    output_dir="model",
-                    test_size=test_size, 
-                    random_state=random_state, 
-                    scale=scale
-                )
-                st.session_state['results'] = (metrics_df, details)
-                st.success("Validation complete!")
-
-        if 'results' in st.session_state:
-            metrics_df, details = st.session_state['results']
-            
-            st.subheader("Model Comparison")
-            st.dataframe(metrics_df.style.highlight_max(axis=0, subset=['accuracy']), use_container_width=True)
-
-            st.divider()
-
-            col_sel, col_space = st.columns([1, 2])
-            with col_sel:
-                model_names = metrics_df['model'].tolist()
-                sel = st.selectbox("🔍 Select model to inspect", model_names)
-            info = details.get(sel)
-            if info is not None:
-                y_test = info['y_test']
-                y_pred = info['y_pred']
-                target_names = info.get('target_names')
-                st.subheader(f"Detailed Analysis: {sel}")
-    
-           #info = details.get(sel)
-           # if info:
-           #     y_test, y_pred = info['y_test'], info['y_pred']
-
-                c1, c2 = st.columns(2)
+        st.subheader("Model Validation & Metrics")
+        available_models = [f for f in os.listdir("model") if f.endswith(".joblib")]
+        if not available_models:
+            st.warning("No models found in /model folder.")
+        else:
+            selected_model = st.selectbox("Select Model", available_models)
+            res = validate_model(os.path.join("model", selected_model), df, target_col)
+            if "error" in res:
+                st.error(res["error"])
+            else:
+                m = res["metrics"]
+                # Metric Grid
+                st.divider()
+                r1_c1, r1_c2, r1_c3 = st.columns(3)
+                r2_c1, r2_c2, r2_c3 = st.columns(3)
                 
-                with c1:
-                    st.markdown("**Classification Report**")
-                    cr = classification_report(y_test, y_pred, target_names=target_names)
-                    st.code(cr)
-                with c2:
-                    st.markdown("**Confusion Matrix**")
-                    cm = confusion_matrix(y_test, y_pred)
-                    fig, ax = plt.subplots(figsize=(6, 5))
-        
-                    sns.heatmap(
-                        cm, 
-                        annot=True, 
-                        fmt='d', 
-                        cmap='Blues', 
-                        ax=ax,
-                        )
-                    plt.ylabel('Actual Class')
-                    plt.xlabel('Predicted Class')
-                    st.pyplot(fig)
-           
+                r1_c1.metric("Accuracy", f"{m['Accuracy']:.2%}")
+                r1_c2.metric("AUC Score", f"{m.get('AUC', 0):.4f}")
+                r1_c3.metric("MCC Score", f"{m['MCC']:.4f}")
+                
+                r2_c1.metric("Precision", f"{m['Precision']:.2%}")
+                r2_c2.metric("Recall", f"{m['Recall']:.2%}")
+                r2_c3.metric("F1 Score", f"{m['F1 Score']:.2%}")
+
+                # Report & Matrix
+                st.divider()
+                col_rep, col_mat = st.columns([1, 1])
+                
+                with col_rep:
+                    st.write("**Classification Report**")
+                    st.code(m["Report"])
+                
+                with col_mat:
+                    st.write("**Confusion Matrix**")
+                    fig, ax = plt.subplots()
+                    sns.heatmap(m["CM"], annot=True, fmt='d', cmap='Blues', 
+                                xticklabels=m["Labels"], yticklabels=m["Labels"])
+                    st.pyplot(fig)              
 else:
     st.info("💡 Please upload a CSV file or check 'Use default dataset' to begin.")
