@@ -5,8 +5,10 @@ Implement multiple classification models and demonstrate them via Streamlit.
 
 ## Dataset
 - Source: https://www.kaggle.com/datasets/taweilo/loan-approval-classification-data
-- Features: ≥12
-- Instances: ≥500
+- Features: 14
+- Instances: 45000
+- Target Variable: loan_status (1 = Approved, 0 = Rejected)
+- Predicts whether a loan application will be approved or rejected
 
 ## Models Implemented
 - Logistic Regression
