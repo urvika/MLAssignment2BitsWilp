@@ -1,7 +1,7 @@
 # 2025AA05394 ML Assignment 2
 
 ## Problem Statement
-Implement multiple classification models and deploy them via Streamlit.
+Implement multiple classification models and demonstrate them via Streamlit.
 
 ## Dataset
 - Source: https://www.kaggle.com/datasets/taweilo/loan-approval-classification-data
